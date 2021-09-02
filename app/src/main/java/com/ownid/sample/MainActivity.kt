@@ -92,6 +92,10 @@ class MainActivity : AppCompatActivity() {
     private fun onOwnIdLinkOnLoginResponse(ownIdResponse: OwnIdResponse) {
         ownIdFirebase.loginAndLink(email, PASS_SAMPLE, ownIdResponse)
             .addOnSuccessListener {
+                AlertDialog.Builder(this)
+                    .setTitle("Success")
+                    .setMessage("Logged in with email $email")
+                    .show()
                 Log.d(
                     TAG,
                     "Success login with response"
