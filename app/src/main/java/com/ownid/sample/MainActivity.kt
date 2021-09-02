@@ -43,36 +43,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater, null, false)
         setContentView(binding.root)
-
+        OwnIdLogger.enabled = true
         ownIdFirebase = OwnIdFirebaseFactory.createOwnId(
             this,
-            Firebase.auth,
-            logger = object : OwnIdLogger.Logger {
-                override fun d(className: String, message: String) {
-                    TODO("Not yet implemented")
-                }
-
-                override fun e(className: String, message: String) {
-                    TODO("Not yet implemented")
-                }
-
-                override fun e(className: String, message: String, cause: Throwable?) {
-                    TODO("Not yet implemented")
-                }
-
-                override fun i(className: String, message: String) {
-                    TODO("Not yet implemented")
-                }
-
-                override fun v(className: String, message: String) {
-                    TODO("Not yet implemented")
-                }
-
-                override fun w(className: String, message: String) {
-                    TODO("Not yet implemented")
-                }
-
-            }
+            Firebase.auth
         )
 
         val registerIntent = ownIdFirebase.createRegisterIntent(this, "en", "example@gmail.com")
