@@ -5,18 +5,52 @@
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:padding="32dp"
         tools:context=".MainActivity">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/inputLayout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="login" />
+            android:layout_centerInParent="true"
+            android:hint="Enter email">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/email"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textEmailAddress" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/passLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/inputLayout"
+            android:layout_marginTop="16dp"
+            android:hint="Enter password">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/pass"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <include
             layout="@layout/com_ownid_sdk_skip_password"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true" />
+            android:layout_alignTop="@id/passLayout"
+            android:layout_alignEnd="@id/passLayout"
+            android:layout_alignBottom="@id/passLayout" />
 
+        <Button
+            android:id="@+id/actionButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/passLayout"
+            android:layout_marginTop="16dp"
+            android:padding="16dp"
+            android:text="Login" />
     </RelativeLayout>
 </layout>
