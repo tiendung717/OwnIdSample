@@ -19,6 +19,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var ownIdFirebase: OwnIdFirebase
 
+    private val username: String
+        get() = binding.username.text.toString()
+
     private val emailAddress: String
         get() = binding.email.text.toString()
 
@@ -27,6 +30,7 @@ class MainActivity : AppCompatActivity() {
 
     private val registerLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            binding.root.updateOwnIdView(result.resultCode)
             runCatching { result.data.getOwnIdResponse(result.resultCode) }
                 .onSuccess { onOwnIdRegisterResponse(it) }
                 .onFailure {
@@ -48,19 +52,11 @@ class MainActivity : AppCompatActivity() {
         }
 
     private var registerVisible by Delegates.observable(true) { _, _, newValue ->
-        binding.btnRegister.visibility = if (newValue) View.VISIBLE else View.GONE
+        binding.btnRegister.isEnabled = newValue
     }
 
     private var loginVisible by Delegates.observable(true) { _, _, newValue ->
-        binding.btnLogin.visibility = if (newValue) View.VISIBLE else View.GONE
-    }
-
-    private var loginWithPasswordVisible by Delegates.observable(true) { _, _, newValue ->
-        binding.btnLoginLink.visibility = if (newValue) View.VISIBLE else View.GONE
-    }
-
-    private var passwordVisible by Delegates.observable(true) { _, _, newValue ->
-        binding.passwordLayout.visibility = if (newValue) View.VISIBLE else View.GONE
+        binding.btnLogin.isEnabled = newValue
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,13 +72,20 @@ class MainActivity : AppCompatActivity() {
         OwnIdLogger.enabled = true
         ownIdFirebase = OwnIdFirebaseFactory.createOwnId(this, Firebase.auth)
 
-        binding.btnRegister.setOnClickListener { registerWithSkipPassword() }
+        binding.root.setOwnIdView { registerWithSkipPassword() }
+        binding.btnRegister.setOnClickListener { registerWithPassword() }
         binding.btnLogin.setOnClickListener { login() }
     }
 
     private fun login() {
         val loginIntent = ownIdFirebase.createLoginIntent(this, "en", emailAddress)
         loginLauncher.launch(loginIntent)
+    }
+
+    private fun registerWithPassword() {
+        Firebase.auth.createUserWithEmailAndPassword(emailAddress, password)
+            .addOnSuccessListener { gotoLoginPage() }
+            .addOnFailureListener { showMessage(it.message) }
     }
 
     private fun registerWithSkipPassword() {
@@ -97,22 +100,11 @@ class MainActivity : AppCompatActivity() {
     private fun gotoRegisterPage() {
         registerVisible = true
         loginVisible = false
-        loginWithPasswordVisible = false
-        passwordVisible = loginWithPasswordVisible
     }
 
     private fun gotoLoginPage() {
         registerVisible = false
         loginVisible = true
-        loginWithPasswordVisible = false
-        passwordVisible = false
-    }
-
-    private fun gotoLinkLoginPage() {
-        registerVisible = false
-        loginVisible = false
-        loginWithPasswordVisible = true
-        passwordVisible = true
     }
 
     private fun validateEmail(email: String): Boolean {
@@ -124,7 +116,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onOwnIdRegisterResponse(ownIdResponse: OwnIdResponse) {
-        ownIdFirebase.register("Tien Dzung", emailAddress, ownIdResponse)
+        ownIdFirebase.register(username, emailAddress, ownIdResponse)
             .addOnSuccessListener {
                 showMessage("Registered successfully")
                 gotoLoginPage()
@@ -145,11 +137,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onOwnIdLinkOnLoginResponse(ownIdResponse: OwnIdResponse) {
-        gotoLinkLoginPage()
-        binding.btnLoginLink.setOnClickListener {
-            ownIdFirebase.loginAndLink(emailAddress, password, ownIdResponse)
-                .addOnSuccessListener { showMessage("Link and login successfully") }
-                .addOnFailureListener { showMessage(it.message) }
-        }
+        ownIdFirebase.loginAndLink(emailAddress, password, ownIdResponse)
+            .addOnSuccessListener { showMessage("Link and login successfully") }
+            .addOnFailureListener { showMessage(it.message) }
     }
 }
