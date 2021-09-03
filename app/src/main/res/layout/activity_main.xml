@@ -34,7 +34,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textEmailAddress"
-                android:text="tien@gmail.com" />
+                android:text="tien123@gmail.com" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <RelativeLayout
@@ -57,7 +57,7 @@
 
             <include
                 layout="@layout/com_ownid_sdk_skip_password"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_alignBottom="@id/passwordLayout"
                 android:layout_alignParentEnd="true"/>

@@ -35,7 +35,10 @@ class MainActivity : AppCompatActivity() {
                 .onSuccess { onOwnIdRegisterResponse(it) }
                 .onFailure {
                     when (it) {
-                        is ServerError -> gotoLoginPage()
+                        is ServerError -> {
+                            showMessage(it.message)
+                            gotoLoginPage()
+                        }
                         else -> showMessage(it.message)
                     }
                 }
