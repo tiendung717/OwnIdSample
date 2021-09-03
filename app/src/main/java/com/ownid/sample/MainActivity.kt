@@ -1,6 +1,5 @@
 package com.ownid.sample
 
-import android.app.Activity
 import android.os.Bundle
 import android.util.Patterns
 import android.view.View
@@ -32,7 +31,7 @@ class MainActivity : AppCompatActivity() {
                 .onSuccess { onOwnIdRegisterResponse(it) }
                 .onFailure {
                     when (it) {
-                        is ServerError -> gotoLogin()
+                        is ServerError -> gotoLoginPage()
                         else -> showMessage(it.message)
                     }
                 }
@@ -69,11 +68,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater, null, false)
         setContentView(binding.root)
 
-        registerVisible = true
-        loginVisible = false
-        loginWithPasswordVisible = false
-        passwordVisible = loginWithPasswordVisible
-
+        gotoRegisterPage()
         integrateOwnId()
     }
 
@@ -99,14 +94,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun gotoLogin() {
+    private fun gotoRegisterPage() {
+        registerVisible = true
+        loginVisible = false
+        loginWithPasswordVisible = false
+        passwordVisible = loginWithPasswordVisible
+    }
+
+    private fun gotoLoginPage() {
         registerVisible = false
         loginVisible = true
         loginWithPasswordVisible = false
         passwordVisible = false
     }
 
-    private fun gotoLinkLogin() {
+    private fun gotoLinkLoginPage() {
         registerVisible = false
         loginVisible = false
         loginWithPasswordVisible = true
@@ -125,7 +127,7 @@ class MainActivity : AppCompatActivity() {
         ownIdFirebase.register("Tien Dzung", emailAddress, ownIdResponse)
             .addOnSuccessListener {
                 showMessage("Registered successfully")
-                gotoLogin()
+                gotoLoginPage()
             }
             .addOnFailureListener { cause -> showMessage(cause.message) }
     }
@@ -143,7 +145,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onOwnIdLinkOnLoginResponse(ownIdResponse: OwnIdResponse) {
-        gotoLinkLogin()
+        gotoLinkLoginPage()
         binding.btnLoginLink.setOnClickListener {
             ownIdFirebase.loginAndLink(emailAddress, password, ownIdResponse)
                 .addOnSuccessListener { showMessage("Link and login successfully") }
