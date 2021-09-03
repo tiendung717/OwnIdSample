@@ -1,8 +1,9 @@
 package com.ownid.sample
 
+import android.app.Activity
 import android.os.Bundle
 import android.util.Patterns
-import android.widget.Toast
+import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.auth.ktx.auth
@@ -10,7 +11,9 @@ import com.google.firebase.ktx.Firebase
 import com.ownid.sample.databinding.ActivityMainBinding
 import com.ownid.sdk.*
 import com.ownid.sdk.exception.EmailAndPasswordRequired
+import com.ownid.sdk.exception.ServerError
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.properties.Delegates
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,29 +23,56 @@ class MainActivity : AppCompatActivity() {
     private val emailAddress: String
         get() = binding.email.text.toString()
 
+    private val password: String
+        get() = binding.password.text.toString()
+
     private val registerLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            binding.root.updateOwnIdView(result.resultCode)
             runCatching { result.data.getOwnIdResponse(result.resultCode) }
                 .onSuccess { onOwnIdRegisterResponse(it) }
-                .onFailure { toast(it.message) }
+                .onFailure {
+                    when (it) {
+                        is ServerError -> gotoLogin()
+                        else -> showMessage(it.message)
+                    }
+                }
         }
 
     private val loginLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            binding.root.updateOwnIdView(result.resultCode)
             runCatching { result.data.getOwnIdResponse(result.resultCode) }
                 .onSuccess { ownIdResponse ->
                     if (ownIdResponse.isLogin()) onOwnIdLoginResponse(ownIdResponse)
                     else onOwnIdLinkOnLoginResponse(ownIdResponse)
                 }
-                .onFailure { toast(it.message) }
+                .onFailure { showMessage(it.message) }
         }
+
+    private var registerVisible by Delegates.observable(true) { _, _, newValue ->
+        binding.btnRegister.visibility = if (newValue) View.VISIBLE else View.GONE
+    }
+
+    private var loginVisible by Delegates.observable(true) { _, _, newValue ->
+        binding.btnLogin.visibility = if (newValue) View.VISIBLE else View.GONE
+    }
+
+    private var loginWithPasswordVisible by Delegates.observable(true) { _, _, newValue ->
+        binding.btnLoginLink.visibility = if (newValue) View.VISIBLE else View.GONE
+    }
+
+    private var passwordVisible by Delegates.observable(true) { _, _, newValue ->
+        binding.passwordLayout.visibility = if (newValue) View.VISIBLE else View.GONE
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater, null, false)
         setContentView(binding.root)
+
+        registerVisible = true
+        loginVisible = false
+        loginWithPasswordVisible = false
+        passwordVisible = loginWithPasswordVisible
 
         integrateOwnId()
     }
@@ -51,47 +81,73 @@ class MainActivity : AppCompatActivity() {
         OwnIdLogger.enabled = true
         ownIdFirebase = OwnIdFirebaseFactory.createOwnId(this, Firebase.auth)
 
-        binding.root.setOwnIdView { onSkipPasswordClicked() }
+        binding.btnRegister.setOnClickListener { registerWithSkipPassword() }
+        binding.btnLogin.setOnClickListener { login() }
     }
 
-    private fun onSkipPasswordClicked() {
+    private fun login() {
+        val loginIntent = ownIdFirebase.createLoginIntent(this, "en", emailAddress)
+        loginLauncher.launch(loginIntent)
+    }
+
+    private fun registerWithSkipPassword() {
         if (validateEmail(emailAddress)) {
             val registerIntent = ownIdFirebase.createRegisterIntent(this, "en", emailAddress)
             registerLauncher.launch(registerIntent)
         } else {
-            binding.inputLayout.error = "The email is not valid"
+            binding.emailLayout.error = "The email is not valid"
         }
+    }
+
+    private fun gotoLogin() {
+        registerVisible = false
+        loginVisible = true
+        loginWithPasswordVisible = false
+        passwordVisible = false
+    }
+
+    private fun gotoLinkLogin() {
+        registerVisible = false
+        loginVisible = false
+        loginWithPasswordVisible = true
+        passwordVisible = true
     }
 
     private fun validateEmail(email: String): Boolean {
         return email.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }
 
-    private fun toast(message: String?) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    private fun showMessage(message: String?) {
+        binding.tvMessage.text = message
     }
 
     private fun onOwnIdRegisterResponse(ownIdResponse: OwnIdResponse) {
         ownIdFirebase.register("Tien Dzung", emailAddress, ownIdResponse)
-            .addOnSuccessListener { toast("Registered successfully") }
-            .addOnFailureListener { cause -> toast(cause.message) }
+            .addOnSuccessListener {
+                showMessage("Registered successfully")
+                gotoLogin()
+            }
+            .addOnFailureListener { cause -> showMessage(cause.message) }
     }
 
     private fun onOwnIdLoginResponse(ownIdResponse: OwnIdResponse) {
         ownIdFirebase.login(ownIdResponse)
-            .addOnSuccessListener { toast("Logged in successfully") }
+            .addOnSuccessListener { showMessage("Logged in successfully") }
             .addOnFailureListener {
                 when (it) {
                     is CancellationException -> throw it
                     is EmailAndPasswordRequired -> onOwnIdLinkOnLoginResponse(ownIdResponse)
-                    else -> toast(it.message)
+                    else -> showMessage(it.message)
                 }
             }
     }
 
     private fun onOwnIdLinkOnLoginResponse(ownIdResponse: OwnIdResponse) {
-        ownIdFirebase.loginAndLink(emailAddress, "password", ownIdResponse)
-            .addOnSuccessListener { toast("Login with password successfully") }
-            .addOnFailureListener { toast(it.message) }
+        gotoLinkLogin()
+        binding.btnLoginLink.setOnClickListener {
+            ownIdFirebase.loginAndLink(emailAddress, password, ownIdResponse)
+                .addOnSuccessListener { showMessage("Link and login successfully") }
+                .addOnFailureListener { showMessage(it.message) }
+        }
     }
 }
